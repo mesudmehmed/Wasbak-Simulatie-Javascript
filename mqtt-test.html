@@ -1,0 +1,28 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js" integrity="sha512-p8OrcnawEEpEiY7S96nMeaShY5AMcdRFYgnaR0ZmOgMSgL9pLNE4x5+MB0FTol7GeJGzEd9m4MAmmD8urOscvQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+    var client = new Paho.Client('broker.hivemq.com', 8000, 'mesud');
+    client.connect({
+        onSuccess: function () {
+            console.log('Connected');
+            client.subscribe('MESUD212');
+        }
+    });
+    client.onMessageArrived = function (message) {
+        let li = document.createElement('li');
+        li.appendChild(document.createTextNode(message.payloadString));
+        document.getElementById('message-list')
+            .appendChild(li);
+    };
+    function sendMessage() {
+        var input = document.getElementById('message-input');
+        var messageText = input.value;
+        var message = new Paho.Message(messageText);
+        message.destinationName = "MESUD212";
+        client.send(message);
+        input.value = '';
+    }
+</script>
+<ul id='message-list'>
+</ul>
+<input type='text' id='message-input'>
+<button onclick='sendMessage()'>Send Message</button>

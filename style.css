@@ -1,0 +1,276 @@
+/* Set box-sizing property to border-box for all elements to include border and padding in the element's total width and height */
+
+{
+    box-sizing: border-box;
+}
+/* Set background color, font family, height, and center alignment for body */
+body {
+    background-color: #F8F8F8;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Set width, max width, position, and center alignment for sink container */
+.sink-container {
+    width: 70%;
+    max-width: 500px;
+    position: relative;
+    text-align: center;
+}
+
+/* Set background color, border, border radius, height, position, overflow, and bottom margin for sink */
+.sink {
+    background-color: #DDDDDD;
+    border: 10px solid #BBBBBB;
+    border-radius: 10px;
+    height: 200px;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+/* Set content, position, size, background color, and transform for the sink's before pseudo element */
+.sink:before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 200px;
+    height: 200px;
+    background-color: #DDDDDD;
+    border-radius: 50%;
+    transform: rotate(-45deg);
+}
+
+/* Set background color, height, position, bottom, and transition for water */
+.water {
+    background-color: #00BFFF;
+    height: 0;
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    transition: height 0.5s;
+}
+
+/* Set position, size, background color, border radius, rotation, and box shadow for faucet */
+.faucet {
+    position: absolute;
+    top: -30px;
+    left: 0;
+    height: 60px;
+    width: 50px;
+    background: #777777;
+    border-radius: 20px;
+    transform: rotate(45deg);
+    box-shadow: -10px 0px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Set content, position, size, background color, and border radius for faucet's before pseudo element */
+.faucet:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #CCCCCC;
+    border-radius: 50%;
+    height: 20px;
+    width: 20px;
+}
+
+/* Set content, position, size, background, and rotation for faucet's after pseudo element */
+.faucet:after {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: -5px;
+    width: 60px;
+    height: 5px;
+    background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+    transform: rotate(-45deg);
+}
+
+/* Set position, size, overflow, and center alignment for faucet-stream-container */
+.faucet-stream-container {
+    position: absolute;
+    top: 10px;
+    left: 22px;
+    width: 5px;
+    height: 80px;
+    overflow: hidden;
+}
+
+/* Set position, size, background color, animation, and transform origin for faucet-stream */
+.faucet-stream {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: #00BFFF;
+    height: 100%;
+    width: 100%;
+    animation: faucet-stream 2s ease-in-out infinite;
+    transform-origin: top;
+}
+
+/* Set keyframes for faucet-stream animation */
+@keyframes faucet-stream {
+    0% {
+        transform: translateY(0) scaleY(0);
+    }
+    50% {
+        transform: translateY(10px) scaleY(1);
+    }
+    100% {
+        transform: translateY(0) scaleY(0);
+    }
+}
+
+/* Set list style type and bottom margin for message-list */
+#message-list {
+    list-style-type: none;
+    margin-bottom: 20px;
+}
+
+/* Set bottom margin for each item in message-list */
+#message-list li {
+    margin-bottom: 5px;
+}
+
+/* Set width, padding, and right margin for message-input */
+#message-input {
+    width: 70%;
+    padding: 5px;
+    margin-right: 5px;
+}
+
+/* Set display, center alignment, and spacing between items for water-level-container */
+#water-level-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Set width, height, background color, border radius, right margin, and overflow for water-level-bar */
+#water-level-bar {
+    width: 70%;
+    height: 20px;
+    background-color: #DDDDDD;
+    border-radius:10px;
+    margin-right: 5px;
+    overflow: hidden;
+}
+
+/* Set height and background color for water-level */
+#water-level-bar .water-level {
+    height: 100%;
+    background-color: #00BFFF;
+    transition: height 0.5s;
+}
+
+/* Set display, center alignment, and spacing between items for fill-rate-container and drain-rate-container */
+#fill-rate-container, #drain-rate-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Set width, height, background color, border radius, and overflow for fill-rate-bar and drain-rate-bar */
+#fill-rate-bar, #drain-rate-bar {
+    width: 70%;
+    height: 20px;
+    background-color: #DDDDDD;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Set height and background color for fill-rate and drain-rate */
+#fill-rate-bar .fill-rate, #drain-rate-bar .drain-rate {
+    height: 100%;
+    background-color: #00BFFF;
+    transition: width 0.5s;
+}
+
+/* Set display, center alignment, and spacing between items for trend-container */
+#trend-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Set width, height, background color, and border radius for trend-chart */
+#trend-chart {
+    width: 70%;
+    height: 150px;
+    background-color: #DDDDDD;
+    border-radius: 10px;
+}
+
+/* Set width and height to 100% for svg inside trend-chart */
+#trend-chart svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Set keyframes for water animation */
+@keyframes water {
+    0% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(10px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+/* Set background color, border, overflow, and padding for trend-graph */
+#trend-graph {
+    background-color: #f8f8f8;
+    border: 1px solid #ddd;
+    overflow: hidden;
+    padding: 10px;
+}
+
+/* Set fill color, stroke color, stroke width, and line width for trend graph line */
+.line {
+    fill: none;
+    stroke: steelblue;
+    stroke-width: 2px;
+}
+
+/* Set font weight and bottom margin for status */
+#status {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* Set left margin for status icon */
+#status-icon {
+    margin-left: 5px;
+}
+
+/* Set width and height for graph */
+#graph {
+    width: 100%;
+    height: 80px;
+}
+
+/* Set fill color, stroke color, and stroke width for graph line */
+#graph-line {
+    fill: none;
+    stroke: #007bff;
+    stroke-width: 2;
+}
+
+/* Set position, border, border radius, box shadow, padding, and bottom margin for graph container */
+.graph-container {
+    position: relative;
+    border: 2px solid #007bff;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    margin-bottom: 20px;
+}

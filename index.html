@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Wasbak simulatie</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="sink-container">
+    <div class="sink">
+        <div class="water"></div>
+    </div>
+    <div class="faucet-container">
+        <div class="faucet"></div>
+        <div class="faucet-stream-container">
+            <div class="faucet-stream"></div>
+        </div>
+    </div>
+    <ul id="message-list"></ul>
+    <div id="status">Status:
+        <span id="status-icon">📨</span><br>
+        <span id="sending" style="color: red;">Sending</span> |
+        <span id="receiving" style="color: red;">Receiving</span><br>
+        <div>Waterpeil: <span id="water-level-value"> </span><br>
+        <div><span id="error-value"> </span><br><br>
+        </div>
+        <div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="inputGroup-sizing-default">Wenswaarde</span>
+                </div>
+                <input type="text" class="form-control" id="message-input" aria-label="Default" aria-describedby="inputGroup-sizing-default">
+            </div>
+            <button type="button" onclick="sendMessage()" class="btn btn-outline-primary">Verstuur</button>
+        </div>
+        <div id="fill-rate-container">
+            <div>Vullingssnelheid:</div>
+            <div id="fill-rate-bar">
+                <div class="fill-rate"></div>
+            </div>
+            <div id="fill-rate-value">0 L/min</div>
+        </div>
+        <div id="drain-rate-container">
+            <div>Afvoersnelheid:</div>
+            <div id="drain-rate-bar">
+                <div class="drain-rate"></div>
+            </div>
+            <div id="drain-rate-value">0 L/min</div>
+        </div>
+
+        <div>Grafiek vullingssnelheid:</div>
+        <center><div class="sink-container graph-container">
+        <svg id="graph" viewBox="0 0 500 100" preserveAspectRatio="none">
+            <polyline id="graph-line" points=""/>
+        </svg>
+        </div>
+        </center>
+    </div>
+        <script>
+            // Create an MQTT client object
+            var client = new Paho.Client("broker.hivemq.com", 8000, "mesud");
+            // Initialize various simulation variables
+            var setpoint = 0; // the desired water level in the sink
+            var waterLevel = 0; // the current water level in the sink
+            var error = 0; // the difference between the setpoint and current water level
+            var fillRate = 0; // the rate at which water is added to the sink
+            var maxFillRate = 3; // the maximum rate at which water can be added to the sink (in liters per minute)
+            var lastFillTimestamp = Date.now(); // the timestamp of the last fill event
+            var fillVolume = 0; // the total amount of water added to the sink (in liters)
+            var trendData = []; // an array of trend data points for the fill rate
+            var logInterval = 1000; // the interval (in milliseconds) at which data is logged to the console
+            var lastLogTime = 0; // the timestamp of the last console log event
+            var drainTrendData = []; // an array of trend data points for the drain rate
+            var drainRate = 0; // the rate at which water is drained from the sink
+            var maxDrainRate = 3; // the maximum rate at which water can be drained from the sink (in liters per minute)
+            // Function to update the simulation
+            function updateSimulation() {
+                // Calculate the current error as the difference between the setpoint and the current water level
+                error = setpoint - waterLevel;
+                // Calculate the fill rate as 5% of the current error
+                fillRate = error * 0.05;
+                // Limit fill rate to maxFillRate and update fill volume
+                fillRate = Math.min(maxFillRate, fillRate);
+                // Get the current timestamp
+                var currentTimestamp = Date.now();
+                // Calculate the duration of the current fill cycle in minutes
+                var fillDuration = (currentTimestamp - lastFillTimestamp) / 1000; // Converted to minutes
+                // Update the last fill timestamp to the current time
+                lastFillTimestamp = currentTimestamp;
+                // Calculate the volume of water added during the current fill cycle
+                fillVolume += fillRate * fillDuration;
+                // Update the water level in the sink
+                waterLevel = Math.min(100, fillVolume);
+                // Calculate the error between the setpoint and the water level
+                error = setpoint - waterLevel;
+                // Update the height of the water element to reflect the new water level
+                document.querySelector('.water').style.height = waterLevel + '%';
+                // Update the water level and error values on the webpage
+                var waterLevelValue = document.querySelector("#water-level-value");
+                // Update the error value on the webpage by selecting the element with the ID "error-value"
+                var errorValue = document.querySelector("#error-value");
+                // Set the text content of the water level value element to the current water level value, rounded to 0 decimal places and concatenated with the "%" symbol
+                waterLevelValue.textContent = waterLevel.toFixed(0) + "%";
+                // Set the text content of the error value element to the string "Verschil: " concatenated with the current error value, rounded to 2 decimal places
+                errorValue.textContent = "Verschil: " + error.toFixed(2);
+                // Update the fill rate and fill rate value on the webpage
+                var fillRateBar = document.querySelector("#fill-rate-bar .fill-rate");
+                // Select the HTML element that displays the fill rate value using its ID
+                var fillRateValue = document.querySelector("#fill-rate-value");
+                // Set the width of the fill rate bar element based on the current fill rate and the maximum fill rate
+                fillRateBar.style.width = (fillRate / maxFillRate * 100).toFixed(0) + '%';
+                // Set the text content of the fill rate value element to display the current fill rate in liters per minute, rounded to two decimal places
+                fillRateValue.textContent = fillRate.toFixed(2) + " L/min";
+                // Add data to the trend data array
+                trendData.push({ x: Date.now(), y: fillRate });
+                // Calculate the current drain rate based on the fill volume and duration
+                drainRate = Math.min(maxDrainRate, fillVolume / fillDuration);
+                // Get the DOM element for the drain rate bar and the drain rate value
+                var drainRateBar = document.querySelector("#drain-rate-bar .drain-rate");
+                var drainRateValue = document.querySelector("#drain-rate-value");
+                // Set the width of the drain rate bar based on the current drain rate and maximum drain rate
+                drainRateBar.style.width = (drainRate / maxDrainRate * 100).toFixed(0) + '%';
+                // Set the text content of the drain rate value element to the current drain rate in liters per minute
+                drainRateValue.textContent = drainRate.toFixed(2) + " L/min";
+                // Send water level, error, fill rate, and trend data to HiveMQ broker
+                if (client.isConnected()) {
+                    // Create a new MQTT message object for the current water level and set the destination topic
+                    var message1 = new Paho.Message(waterLevel.toFixed(2));
+                    message1.destinationName = "MESUD212/waterLevel";
+                    // Send the message to the MQTT broker
+                    client.send(message1);
+                    // Create a new MQTT message object for the current error and set the destination topic
+                    var message2 = new Paho.Message(error.toFixed(2));
+                    message2.destinationName = "MESUD212/error";
+                    // Send the message to the MQTT broker
+                    client.send(message2);
+                    // Create a new MQTT message object for the current fill rate and set the destination topic
+                    var message3 = new Paho.Message(fillRate.toFixed(2));
+                    message3.destinationName = "MESUD212/fillRate";
+                    // Send the message to the MQTT broker
+                    client.send(message3);
+                    // Create a new MQTT message object for the trend data in JSON format and set the destination topic
+                    var message4 = new Paho.Message(JSON.stringify(trendData));
+                    message4.destinationName = "MESUD212/trendData";
+                    // Send the message to the MQTT broker
+                    client.send(message4);
+                    // Create a new MQTT message object for the fill volume and set the destination topic
+                    var message5 = new Paho.Message(fillVolume.toFixed(2));
+                    message5.destinationName = "MESUD212/fillVolume";
+                    // Send the message to the MQTT broker
+                    client.send(message5);
+                    // Create a new MQTT message object for the maximum fill rate and set the destination topic
+                    var message6 = new Paho.Message(maxFillRate.toFixed(2));
+                    message6.destinationName = "MESUD212/maxFillRate";
+                    // Send the message to the MQTT broker
+                    client.send(message6);
+                    // Create a new MQTT message object for the maximum drain rate and set the destination topic
+                    var message7 = new Paho.Message(maxDrainRate.toFixed(2));
+                    message7.destinationName = "MESUD212/maxDrainRate";
+                    // Send the message to the MQTT broker
+                    client.send(message7);
+                }
+                // Log data to console every logInterval milliseconds
+                if (Date.now() - lastLogTime >= logInterval) {
+                    // Log the current values of water level, error, fill rate, and drain rate to the console
+                    console.log("Data: Water level: " + waterLevel.toFixed(2) + "%, Error: " + error.toFixed(2) + ", Fill rate: " + fillRate.toFixed(2) + " L/min, Drain flow rate: " + drainRate.toFixed(2) + " L/min");
+                    // Update the last log time to the current time
+                    lastLogTime = Date.now();
+                }
+                // Update the graph
+                var graphLine = document.getElementById("graph-line");
+                // Create an empty array to hold the x,y coordinates of the trend data points
+                var graphPoints = [];
+                // Loop through the trendData array and calculate the x,y coordinates for each point
+                for (var i = 0; i < trendData.length; i++) {
+                    // Calculate the x-coordinate for the current point by subtracting the current time from the point's x value and scaling it down by a factor of 1000 and 10
+                    var x = 500 - ((Date.now() - trendData[i].x) / 1000) * 10;
+                    // Calculate the y-coordinate for the current point by dividing the point's y value by the maximum fill rate, scaling it up by a factor of 100, and subtracting it from 100
+                    var y = 100 - (trendData[i].y / maxFillRate) * 100;
+                    // Add the x,y coordinates as a string to the graphPoints array
+                    graphPoints.push(x + "," + y);
+                }
+                // Set the "points" attribute of the SVG polyline element to the joined string of all the x,y coordinates in graphPoints
+                graphLine.setAttribute("points", graphPoints.join(" "));
+            }
+            // Function to connect to the MQTT broker
+            function connectToMQTTBroker() {
+                client.connect({
+                    onSuccess: function () {
+                        console.log("Connected to MQTT broker.");
+                        client.subscribe("MESUD212/setpoint");
+                        client.subscribe("MESUD212/waterLevel");
+                        client.subscribe("MESUD212/error");
+                        client.subscribe("MESUD212/fillRate");
+                        client.subscribe("MESUD212/fillVolume");
+                        client.subscribe("MESUD212/maxFillRate");
+                        client.subscribe("MESUD212/trendData");
+                        document.getElementById("status-icon").textContent = "✔️";
+                    },
+                    onFailure: function (message) {
+                        console.log("Connection failed: " + message.errorMessage);
+                        document.getElementById("status-icon").textContent = "❌";
+                    }
+                });
+            }
+            // Function to handle incoming MQTT messages
+            function onMessageArrived(message) {
+                if (message.destinationName === "MESUD212/setpoint") {
+                    setpoint = parseFloat(message.payloadString);
+                }
+                else if (message.destinationName === "MESUD212/waterLevel") {
+                    waterLevel = parseFloat(message.payloadString);
+                    document.querySelector('.water').style.height = waterLevel + '%';
+                    var waterLevelValue = document.querySelector("#water-level-value");
+                    waterLevelValue.textContent = waterLevel.toFixed(0) + "%";
+                    var receivingStatus = document.getElementById("receiving");
+                    receivingStatus.textContent = "Receiving";
+                    receivingStatus.style.color = "green";
+                }
+                else if (message.destinationName === "MESUD212/error") {
+                    error = parseFloat(message.payloadString);
+                }
+                else if (message.destinationName === "MESUD212/fillRate") {
+                    fillRate = parseFloat(message.payloadString);
+                    var fillRateBar = document.querySelector("#fill-rate-bar .fill-rate");
+                    var fillRateValue = document.querySelector("#fill-rate-value");
+                    fillRateBar.style.width = (fillRate / maxFillRate * 100).toFixed(0) + '%';
+                    fillRateValue.textContent = fillRate.toFixed(2) + " L/min";
+                }
+                else if (message.destinationName === "MESUD212/fillVolume") {
+                    fillVolume = parseFloat(message.payloadString);
+                }
+                else if (message.destinationName === "MESUD212/maxFillRate") {
+                    maxFillRate = parseFloat(message.payloadString);
+                }
+                else if (message.destinationName === "MESUD212/trendData") {
+                    trendData = JSON.parse(message.payloadString);
+                }
+                else if (message.destinationName === "MESUD212/maxDrainRate") {
+                    maxDrainRate = parseFloat(message.payloadString);
+                }
+            }
+            // Function to send a message to the MQTT broker
+            function sendMessage() {
+                var input = document.getElementById("message-input");
+                setpoint = parseFloat(input.value);
+                input.value = "";
+                // Send setpoint to MQTT broker
+                if (client.isConnected()) {
+                    var message = new Paho.Message(setpoint.toFixed(2));
+                    message.destinationName = "MESUD212/setpoint";
+                    client.send(message);
+                    var sendingStatus = document.getElementById("sending");
+                    sendingStatus.textContent = "Sending";
+                    sendingStatus.style.color = "green";
+                    // Log what is sent to the MQTT broker
+                    console.log("Sent to MQTT broker: " + setpoint.toFixed(2));
+                }
+            }
+            // Connect to MQTT broker when page loads
+            connectToMQTTBroker();
+            // Handle connection loss to MQTT broker
+            client.onConnectionLost = function (responseObject) {
+                if (responseObject.errorCode !== 0) {
+                    console.log("Connection lost: " + responseObject.errorMessage);
+                    setTimeout(connectToMQTTBroker, 5000);
+                }
+            };
+            // Handle incoming MQTT messages
+            client.onMessageArrived = onMessageArrived;
+
+            // Simulate the sink behavior and update the simulation
+            function simulate() {
+                updateSimulation(); // Calls the updateSimulation() function to update the simulation
+                setTimeout(simulate, 100); // Repeats the simulate() function every 100 milliseconds
+            }
+            simulate(); // Calls the simulate() function to start the simulation
+</script>
+</body>
+</html>
